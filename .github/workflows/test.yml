@@ -1,0 +1,61 @@
+name: Testy – Cvičení 14.1
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Stažení repozitáře
+        uses: actions/checkout@v4
+
+      - name: Kontrola existence main.c
+        run: |
+          if [ ! -f main.c ]; then
+            echo "CHYBA: Soubor main.c nebyl nalezen v kořeni repozitáře."
+            exit 1
+          fi
+
+      - name: Kontrola počtu commitů
+        run: |
+          COUNT=$(git rev-list --count HEAD)
+          echo "Počet commitů: $COUNT"
+          if [ "$COUNT" -lt 3 ]; then
+            echo "UPOZORNĚNÍ: Máš méně než 3 commity. Nezapomeň průběžně commitovat!"
+          fi
+
+      - name: Kompilace main.c
+        run: |
+          gcc -Wall -Wextra -o main main.c
+          if [ $? -ne 0 ]; then
+            echo "CHYBA: Kompilace selhala."
+            exit 1
+          fi
+          echo "Kompilace proběhla úspěšně."
+
+      - name: Kompilace testů
+        run: |
+          gcc -Wall -o tests/test_runner tests/test_runner.c
+          if [ $? -ne 0 ]; then
+            echo "CHYBA: Kompilace testů selhala (kontaktuj učitele)."
+            exit 1
+          fi
+
+      - name: Spuštění testů
+        working-directory: ${{ github.workspace }}
+        run: |
+          cp tests/test_runner .
+          ./test_runner
+          RESULT=$?
+          if [ $RESULT -ne 0 ]; then
+            echo ""
+            echo "Některé testy neprošly. Zkontroluj formát výstupu podle README."
+            exit 1
+          fi
+          echo ""
+          echo "Všechny testy prošly!"
